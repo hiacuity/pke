@@ -131,14 +131,14 @@ class YAKE(LoadFile):
         for i, sentence in enumerate(self.sentences):
 
             # compute the offset shift for the sentence
-            shift = sum([s.length for s in self.sentences[0:i]])
+            shift = sum(s.length for s in self.sentences[:i])
 
             # loop through words in sentence
             for j, word in enumerate(sentence.words):
 
                 # consider words containing at least one alpha-numeric character
                 if self._is_alphanum(word) and \
-                        not re.search('(?i)^-[lr][rcs]b-$', word):
+                            not re.search('(?i)^-[lr][rcs]b-$', word):
 
                     # get the word or stem
                     index = word.lower()
@@ -162,8 +162,7 @@ class YAKE(LoadFile):
         """
 
         # loop through sentences
-        for i, sentence in enumerate(self.sentences):
-
+        for sentence in self.sentences:
             # lowercase the words
             words = [w.lower() for w in sentence.words]
 
@@ -183,12 +182,10 @@ class YAKE(LoadFile):
                     continue
 
                 # add the left context
-                self.contexts[word][0].extend(
-                    [w for w in block[max(0, len(block) - window):len(block)]]
-                )
+                self.contexts[word][0].extend(list(block[max(0, len(block) - window):]))
 
                 # add the right context
-                for w in block[max(0, len(block) - window):len(block)]:
+                for w in block[max(0, len(block) - window):]:
                     self.contexts[w][1].append(word)
 
                 # add word to the current block
@@ -279,7 +276,7 @@ class YAKE(LoadFile):
                 self.features[word]['TF'])
 
             # 2. POSITION feature
-            sentence_ids = list(set([t[2] for t in self.words[word]]))
+            sentence_ids = list({t[2] for t in self.words[word]})
             self.features[word]['POSITION'] = math.log(
                 3.0 + numpy.median(sentence_ids))
             self.features[word]['POSITION'] = math.log(
@@ -292,14 +289,18 @@ class YAKE(LoadFile):
             # 4. RELATEDNESS feature
             self.features[word]['WL'] = 0.0
             if len(self.contexts[word][0]):
-                self.features[word]['WL'] = len(set(self.contexts[word][0]))
-                self.features[word]['WL'] /= len(self.contexts[word][0])
+                self.features[word]['WL'] = len(set(self.contexts[word][0])) / len(
+                    self.contexts[word][0]
+                )
+
             self.features[word]['PL'] = len(set(self.contexts[word][0])) / max_TF
 
             self.features[word]['WR'] = 0.0
             if len(self.contexts[word][1]):
-                self.features[word]['WR'] = len(set(self.contexts[word][1]))
-                self.features[word]['WR'] /= len(self.contexts[word][1])
+                self.features[word]['WR'] = len(set(self.contexts[word][1])) / len(
+                    self.contexts[word][1]
+                )
+
             self.features[word]['PR'] = len(set(self.contexts[word][1])) / max_TF
 
             self.features[word]['RELATEDNESS'] = 1
@@ -307,12 +308,9 @@ class YAKE(LoadFile):
             #self.features[word]['RELATEDNESS'] += self.features[word]['PR']
             self.features[word]['RELATEDNESS'] += (self.features[word]['WR'] +
                                                    self.features[word]['WL']) * \
-                                                  (self.features[word]['TF'] / max_TF)
+                                                      (self.features[word]['TF'] / max_TF)
 
-            # 5. DIFFERENT feature
-            self.features[word]['DIFFERENT'] = len(set(sentence_ids))
-            self.features[word]['DIFFERENT'] /= len(self.sentences)
-
+            self.features[word]['DIFFERENT'] = len(set(sentence_ids)) / len(self.sentences)
             # assemble the features to weight words
             A = self.features[word]['CASING']
             B = self.features[word]['POSITION']
@@ -353,7 +351,6 @@ class YAKE(LoadFile):
                 self.weights[k] = numpy.prod(weights)
                 self.weights[k] /= len(v.offsets) * (1 + sum(weights))
 
-            # use words
             else:
                 lowercase_forms = [' '.join(t).lower() for t in v.surface_forms]
                 for i, candidate in enumerate(lowercase_forms):
@@ -368,7 +365,7 @@ class YAKE(LoadFile):
                         if self.features[token]['isstop']:
                             term_stop = token
                             prob_t1 = prob_t2 = 0
-                            if j - 1 >= 0:
+                            if j >= 1:
                                 term_left = tokens[j-1]
                                 prob_t1 = self.contexts[term_left][1].count(
                                     term_stop) / self.features[term_left]['TF']

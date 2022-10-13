@@ -88,11 +88,7 @@ class KPMiner(LoadFile):
             v = self.candidates[k]
 
             # delete if first candidate offset is greater than cutoff
-            if v.offsets[0] > cutoff:
-                del self.candidates[k]
-
-            # delete if frequency is lower than lasf
-            elif len(v.surface_forms) < lasf:
+            if v.offsets[0] > cutoff or len(v.surface_forms) < lasf:
                 del self.candidates[k]
 
     def candidate_weighting(self, df=None, sigma=3.0, alpha=2.3):
@@ -116,22 +112,25 @@ class KPMiner(LoadFile):
 
         # initialize default document frequency counts if none provided
         if df is None:
-            logging.warning('LoadFile._df_counts is hard coded to {}'.format(
-                self._df_counts))
+            logging.warning(f'LoadFile._df_counts is hard coded to {self._df_counts}')
             df = load_document_frequency_file(self._df_counts, delimiter='\t')
 
         # initialize the number of documents as --NB_DOC-- + 1 (current)
         N = 1 + df.get('--NB_DOC--', 0)
 
         # compute the number of candidates whose length exceeds one
-        P_d = sum([len(v.surface_forms) for v in self.candidates.values()
-                   if len(v.lexical_form) > 1])
+        P_d = sum(
+            len(v.surface_forms)
+            for v in self.candidates.values()
+            if len(v.lexical_form) > 1
+        )
+
 
         # fall back to 1 if all candidates are words
         P_d = max(1, P_d)
 
         # compute the number of all candidate terms
-        N_d = sum([len(v.surface_forms) for v in self.candidates.values()])
+        N_d = sum(len(v.surface_forms) for v in self.candidates.values())
 
         # compute the boosting factor
         B = min(N_d / (P_d * alpha), sigma)

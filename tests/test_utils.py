@@ -105,7 +105,7 @@ def test_compute_lda(tmp_path):
     tmp_corpus = create_corpus(corpus, tmp_path)
 
     # Create expected value
-    expected_dict = set(t for v in corpus.values() for t in v.split())
+    expected_dict = {t for v in corpus.values() for t in v.split()}
 
     # Compute LDA topics
     tmp_lda = tmp_path / 'lda.pickle.gz'
@@ -168,9 +168,9 @@ def test_compute_pairwise_sim_two_corpus(tmp_path):
     collection = {'1.txt': 'sit ipsum', '2.txt': 'lorem ipsum sit amet'}
     collection_dir = create_corpus(collection, tmp_path, name='collection')
 
-    # Create expected value
-    expected = {k: sorted([k2 for k2 in collection]) for k in corpus}
-    expected.update({k: sorted([k2 for k2 in corpus]) for k in collection})
+    expected = {k: sorted(list(collection)) for k in corpus} | {
+        k: sorted(list(corpus)) for k in collection
+    }
 
     # Compute pairwise similarity
     tmp_pairw = tmp_path / 'pairwise.gz'

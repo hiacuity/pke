@@ -120,10 +120,8 @@ class TopicCoRank(TopicRank):
                                          language=self.language,
                                          excluded_file=excluded_file)
         else:
-            logging.warning("{} is not a reference file".format(input_file))
+            logging.warning(f"{input_file} is not a reference file")
             references = {}
-            pass
-
         # initialize the topic_to_integer map
         for i, topic in enumerate(self.topics):
             for candidate in topic:
@@ -217,7 +215,7 @@ class TopicCoRank(TopicRank):
 
         nb_nodes = len(self.graph.nodes)
 
-        logging.info("resulting graph is {} nodes".format(nb_nodes))
+        logging.info(f"resulting graph is {nb_nodes} nodes")
 
         # weights = [1.0] * nb_nodes
         weights = defaultdict(lambda:1.0)
@@ -260,7 +258,7 @@ class TopicCoRank(TopicRank):
                     # inner recommendation
                     if self.graph[i][j]['type'] == "in":
                         r_in += (self.graph[i][j]["weight"] * w[j]) / \
-                                inner_norms[j]
+                                    inner_norms[j]
 
                     # outer recommendation
                     else:

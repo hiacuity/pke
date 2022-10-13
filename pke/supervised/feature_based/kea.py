@@ -115,8 +115,7 @@ class Kea(SupervisedLoadFile):
 
         # initialize default document frequency counts if none provided
         if df is None:
-            logging.warning('LoadFile._df_counts is hard coded to {}'.format(
-                self._df_counts))
+            logging.warning(f'LoadFile._df_counts is hard coded to {self._df_counts}')
             df = load_document_frequency_file(self._df_counts, delimiter='\t')
 
         # initialize the number of documents as --NB_DOC--
@@ -125,7 +124,7 @@ class Kea(SupervisedLoadFile):
             N -= 1
 
         # find the maximum offset
-        maximum_offset = float(sum([s.length for s in self.sentences]))
+        maximum_offset = float(sum(s.length for s in self.sentences))
 
         for k, v in self.candidates.items():
 

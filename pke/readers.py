@@ -44,9 +44,7 @@ class MinimalCoreNLPReader(Reader):
             })
             sentences[-1].update(sentence.attrib)
 
-        doc = Document.from_sentences(sentences, input_file=path, **kwargs)
-
-        return doc
+        return Document.from_sentences(sentences, input_file=path, **kwargs)
 
 
 # FIX
@@ -80,10 +78,13 @@ def fix_spacy_for_french(nlp):
 def list_linked_spacy_models():
     """ Read SPACY/data and return a list of link_name """
     spacy_data = os.path.join(spacy.info(silent=True)['Location'], 'data')
-    linked = [d for d in os.listdir(spacy_data) if os.path.islink(os.path.join(spacy_data, d))]
     # linked = [os.path.join(spacy_data, d) for d in os.listdir(spacy_data)]
     # linked = {os.readlink(d): os.path.basename(d) for d in linked if os.path.islink(d)}
-    return linked
+    return [
+        d
+        for d in os.listdir(spacy_data)
+        if os.path.islink(os.path.join(spacy_data, d))
+    ]
 
 
 def list_downloaded_spacy_models():
@@ -116,15 +117,12 @@ def str2spacy(model):
         downloaded_models = list(spacy.info()['pipelines'])
         links = []
     filtered_downloaded = [m for m in downloaded_models if m[:2] == model]
-    if model in downloaded_models + links:
+    if model in downloaded_models + links or not filtered_downloaded:
         # Check whether `model` is the name of a model/link
         return model
-    elif filtered_downloaded:
+    else:
         # Check whether `model` is a lang code and corresponds to a downloaded model
         return filtered_downloaded[0]
-    else:
-        # Return asked model to have an informative error.
-        return model
 
 
 class RawTextReader(Reader):
@@ -162,14 +160,14 @@ class RawTextReader(Reader):
             spacy_model (model): an already loaded spacy model.
         """
 
-        spacy_model = kwargs.get('spacy_model', None)
+        spacy_model = kwargs.get('spacy_model')
 
         if spacy_model is None:
             try:
                 spacy_model = spacy.load(str2spacy(self.language),
                                          disable=['ner', 'textcat', 'parser'])
             except OSError:
-                logging.warning('No spacy model for \'{}\' language.'.format(self.language))
+                logging.warning(f"No spacy model for \'{self.language}\' language.")
                 logging.warning('Falling back to using english model. There might '
                     'be tokenization and postagging errors. A list of available '
                     'spacy model is available at https://spacy.io/models.'.format(
@@ -187,18 +185,19 @@ class RawTextReader(Reader):
         spacy_model = fix_spacy_for_french(spacy_model)
         spacy_doc = spacy_model(text)
 
-        sentences = []
-        for sentence_id, sentence in enumerate(spacy_doc.sents):
-            sentences.append({
+        sentences = [
+            {
                 "words": [token.text for token in sentence],
                 "lemmas": [token.lemma_ for token in sentence],
                 # FIX : This is a fallback if `fix_spacy_for_french` does not work
                 "POS": [token.pos_ or token.tag_ for token in sentence],
-                "char_offsets": [(token.idx, token.idx + len(token.text))
-                                 for token in sentence]
-            })
+                "char_offsets": [
+                    (token.idx, token.idx + len(token.text)) for token in sentence
+                ],
+            }
+            for sentence in spacy_doc.sents
+        ]
 
-        doc = Document.from_sentences(
-            sentences, input_file=kwargs.get('input_file', None), **kwargs)
-
-        return doc
+        return Document.from_sentences(
+            sentences, input_file=kwargs.get('input_file', None), **kwargs
+        )

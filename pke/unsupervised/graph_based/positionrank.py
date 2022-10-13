@@ -121,10 +121,12 @@ class PositionRank(SingleRank):
         # flatten document as a sequence of only valid (word, position) tuples
         text = []
         for i, sentence in enumerate(self.sentences):
-            shift = sum([s.length for s in self.sentences[0:i]])
-            for j, word in enumerate(sentence.stems):
-                if sentence.pos[j] in pos:
-                    text.append((word, shift+j))
+            shift = sum(s.length for s in self.sentences[:i])
+            text.extend(
+                (word, shift + j)
+                for j, word in enumerate(sentence.stems)
+                if sentence.pos[j] in pos
+            )
 
         # add nodes to the graph
         self.graph.add_nodes_from([word for (word, position) in text])
@@ -178,7 +180,7 @@ class PositionRank(SingleRank):
         # loop through the candidates
         for k in self.candidates.keys():
             tokens = self.candidates[k].lexical_form
-            self.weights[k] = sum([w.get(t, 0.0) for t in tokens])
+            self.weights[k] = sum(w.get(t, 0.0) for t in tokens)
             if normalized:
                 self.weights[k] /= len(tokens)
 

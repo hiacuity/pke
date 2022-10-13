@@ -2,6 +2,7 @@
 
 """Base classes for the pke module."""
 
+
 from collections import defaultdict
 
 from pke.data_structures import Candidate, Document
@@ -30,8 +31,11 @@ get_alpha_2 = lambda l: LANGUAGE_CODE_BY_NAME[l]
 
 lang_stopwords = {get_alpha_2(l): l for l in stopwords._fileids}
 
-lang_stem = {get_alpha_2(l): l for l in set(SnowballStemmer.languages) - set(['porter'])}
-lang_stem.update({'en': 'porter'})
+lang_stem = {
+    get_alpha_2(l): l for l in set(SnowballStemmer.languages) - {'porter'}
+}
+
+lang_stem['en'] = 'porter'
 
 PRINT_NO_STEM_WARNING = defaultdict(lambda: True)
 PRINT_NO_STWO_WARNING = defaultdict(lambda: True)
@@ -53,7 +57,7 @@ def get_stopwords(lang):
         return stopwords.words(lang)
     except KeyError:
         if PRINT_NO_STWO_WARNING[lang]:
-            logging.warning('No stopwords for \'{}\' language.'.format(lang))
+            logging.warning(f"No stopwords for \'{lang}\' language.")
             logging.warning(
                 'Please provide custom stoplist if willing to use stopwords. Or '
                 'update nltk\'s `stopwords` corpora using `nltk.download(\'stopwords\')`')
@@ -79,7 +83,7 @@ def get_stemmer_func(lang):
         return stemmer.stem
     except KeyError:
         if PRINT_NO_STEM_WARNING[lang]:
-            logging.warning('No stemmer for \'{}\' language.'.format(lang))
+            logging.warning(f"No stemmer for \'{lang}\' language.")
             logging.warning('Stemming will not be applied.')
             PRINT_NO_STEM_WARNING[lang] = False
         return lambda x: x
@@ -170,8 +174,10 @@ class LoadFile(object):
             parser = RawTextReader(language=language)
             doc = parser.read(text=input, **kwargs)
         else:
-            logging.error('Cannot process input. It is neither a file path '
-                          'or a string: {}'.format(type(input)))
+            logging.error(
+                f'Cannot process input. It is neither a file path or a string: {type(input)}'
+            )
+
             return
 
         # set the input file
@@ -344,7 +350,7 @@ class LoadFile(object):
             skip = min(n, sentence.length)
 
             # compute the offset shift for the sentence
-            shift = sum([s.length for s in self.sentences[0:i]])
+            shift = sum(s.length for s in self.sentences[:i])
 
             # generate the ngrams
             for j in range(sentence.length):
@@ -376,7 +382,7 @@ class LoadFile(object):
         for i, sentence in enumerate(self.sentences):
 
             # compute the offset shift for the sentence
-            shift = sum([s.length for s in self.sentences[0:i]])
+            shift = sum(s.length for s in self.sentences[:i])
 
             # container for the sequence (defined as list of offsets)
             seq = []
@@ -429,7 +435,7 @@ class LoadFile(object):
         for i, sentence in enumerate(self.sentences):
 
             # compute the offset shift for the sentence
-            shift = sum([s.length for s in self.sentences[0:i]])
+            shift = sum(s.length for s in self.sentences[:i])
 
             # convert sentence as list of (offset, pos) tuples
             tuples = [(str(j), sentence.pos[j]) for j in range(sentence.length)]
@@ -515,29 +521,28 @@ class LoadFile(object):
             if set(words).intersection(stoplist):
                 del self.candidates[k]
 
-            # discard if tags are in the pos_blacklist
             elif set(v.pos_patterns[0]).intersection(pos_blacklist):
                 del self.candidates[k]
 
-            # discard if containing tokens composed of only punctuation
-            elif any([set(u).issubset(set(punctuation)) for u in words]):
+            elif any(set(u).issubset(set(punctuation)) for u in words):
                 del self.candidates[k]
 
-            # discard candidates composed of 1-2 characters
             elif len(''.join(words)) < minimum_length:
                 del self.candidates[k]
 
-            # discard candidates containing small words (1-character)
-            elif min([len(u) for u in words]) < minimum_word_size:
+            elif min(len(u) for u in words) < minimum_word_size:
                 del self.candidates[k]
 
-            # discard candidates composed of more than 5 words
             elif len(v.lexical_form) > maximum_word_number:
                 del self.candidates[k]
 
             # discard if not containing only alpha-numeric characters
-            if only_alphanum and k in self.candidates:
-                if not all([self._is_alphanum(w, valid_punctuation_marks)
-                            for w in words]):
-                    del self.candidates[k]
+            if (
+                only_alphanum
+                and k in self.candidates
+                and not all(
+                    self._is_alphanum(w, valid_punctuation_marks) for w in words
+                )
+            ):
+                del self.candidates[k]
 

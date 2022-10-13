@@ -162,7 +162,7 @@ class MultipartiteRank(TopicRank):
         weighted_edges = {}
 
         # find the sum of all first positions
-        norm = sum([s.length for s in self.sentences])
+        norm = sum(s.length for s in self.sentences)
 
         # Topical boosting
         for variants in self.topics:
@@ -181,12 +181,11 @@ class MultipartiteRank(TopicRank):
             # for start, end in self.graph.edges_iter(first):
             for start, end in self.graph.edges(first):
 
-                boosters = []
-                for v in variants:
-                    if v != first and self.graph.has_edge(v, end):
-                        boosters.append(self.graph[v][end]['weight'])
-
-                if boosters:
+                if boosters := [
+                    self.graph[v][end]['weight']
+                    for v in variants
+                    if v != first and self.graph.has_edge(v, end)
+                ]:
                     weighted_edges[(start, end)] = np.sum(boosters)
 
         # update edge weights -- Python 2/3 compatible
