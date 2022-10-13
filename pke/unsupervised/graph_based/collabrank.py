@@ -158,6 +158,6 @@ class CollabRank(SingleRank):
         # loop through the candidates
         for k in self.candidates.keys():
             tokens = self.candidates[k].lexical_form
-            self.weights[k] = sum([w[t] for t in tokens])
+            self.weights[k] = sum(w[t] for t in tokens)
             if normalized:
                 self.weights[k] /= len(tokens)

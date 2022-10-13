@@ -119,10 +119,7 @@ class TopicRank(LoadFile):
                 dim.add(w)
         dim = list(dim)
 
-        # vectorize the candidates Python 2/3 + sort for random issues
-        C = list(self.candidates)  # .keys()
-        C.sort()
-
+        C = sorted(self.candidates)
         X = np.zeros((len(C), len(dim)))
         for i, k in enumerate(C):
             for w in self.candidates[k].lexical_form:

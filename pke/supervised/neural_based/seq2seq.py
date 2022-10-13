@@ -29,7 +29,7 @@ class Seq2Seq(SupervisedLoadFile):
         """Convert the document to a sequence of ix."""
 
         self.sequence.append(self.vocabulary.index('<SOS>'))
-        for i, sentence in enumerate(self.sentences):
+        for sentence in self.sentences:
             for word in sentence.stems:
                 try:
                     self.sequence.append(self.vocabulary.index(word))

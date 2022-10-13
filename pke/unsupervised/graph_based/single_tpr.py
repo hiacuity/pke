@@ -143,7 +143,7 @@ class TopicalPageRank(SingleRank):
             else:
                 lda_model = os.path.join(self._models,
                                          "lda-1000-semeval2010.py3.pickle.gz")
-            logging.warning('LDA model is hard coded to {}'.format(lda_model))
+            logging.warning(f'LDA model is hard coded to {lda_model}')
 
         # load parameters from file
         dictionary, model = pke.utils.load_lda_model(lda_model)
@@ -191,8 +191,8 @@ class TopicalPageRank(SingleRank):
 
         # Normalize the topical word importance of words
         norm = sum(W.values())
-        for word in W:
-            W[word] /= norm
+        for value in W.values():
+            value /= norm
 
         # compute the word scores using biased random walk
         w = nx.pagerank(G=self.graph,
@@ -204,6 +204,6 @@ class TopicalPageRank(SingleRank):
         # loop through the candidates
         for k in self.candidates.keys():
             tokens = self.candidates[k].lexical_form
-            self.weights[k] = sum([w[t] for t in tokens])
+            self.weights[k] = sum(w[t] for t in tokens)
             if normalized:
                 self.weights[k] /= len(tokens)

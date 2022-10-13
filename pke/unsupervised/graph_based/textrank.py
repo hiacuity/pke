@@ -161,8 +161,7 @@ class TextRank(LoadFile):
         if top_percent is not None:
 
             # warn user as this is not the pke way of doing it
-            logging.warning("Candidates are generated using {}-top".format(
-                            top_percent))
+            logging.warning(f"Candidates are generated using {top_percent}-top")
 
             # computing the number of top keywords
             nb_nodes = self.graph.number_of_nodes()
@@ -177,7 +176,7 @@ class TextRank(LoadFile):
         # weight candidates using the sum of their word scores
         for k in self.candidates.keys():
             tokens = self.candidates[k].lexical_form
-            self.weights[k] = sum([w[t] for t in tokens])
+            self.weights[k] = sum(w[t] for t in tokens)
             if normalized:
                 self.weights[k] /= len(tokens)
 

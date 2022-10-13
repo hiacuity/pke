@@ -43,15 +43,7 @@ class Sentence(object):
             return False
 
         # test whether they have the same stem forms
-        if self.stems != other.stems:
-            return False
-
-        # test whether they have the same meta-information
-        if self.meta != other.meta:
-            return False
-
-        # if everything is ok then they are equal
-        return True
+        return False if self.stems != other.stems else self.meta == other.meta
 
 
 class Candidate(object):
@@ -99,11 +91,10 @@ class Document(object):
         doc = Document()
 
         # set the input file
-        doc.input_file = kwargs.get('input_file', None)
+        doc.input_file = kwargs.get('input_file')
 
         # loop through the parsed sentences
-        for i, sentence in enumerate(sentences):
-
+        for sentence in sentences:
             # add the sentence to the container
             s = Sentence(words=sentence['words'])
 
@@ -139,8 +130,4 @@ class Document(object):
             return False
 
         # test whether they contain the same lists of sentences
-        if self.sentences != other.sentences:
-            return False
-
-        # if everything is ok then they are equal
-        return True
+        return self.sentences == other.sentences

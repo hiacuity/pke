@@ -138,7 +138,7 @@ def compute_document_frequency(input_dir,
     with gzip.open(output_file, 'wt', encoding='utf-8') as f:
 
         # add the number of documents as special token
-        first_line = '--NB_DOC--' + delimiter + str(nb_documents)
+        first_line = f'--NB_DOC--{delimiter}{str(nb_documents)}'
         f.write(first_line + '\n')
 
         for ngram in frequencies:
@@ -187,7 +187,7 @@ def train_supervised_model(input_dir,
         ref_encoding (str): encoding of `reference_file`, default to None.
     """
 
-    logging.info('building model {} from {}'.format(model, input_dir))
+    logging.info(f'building model {model} from {input_dir}')
 
     references = load_references(reference_file,
                                  sep_doc_id=sep_doc_id,
@@ -204,10 +204,10 @@ def train_supervised_model(input_dir,
     # get the input files from the input directory
     for input_file in glob.iglob(input_dir + os.sep + '*.' + extension):
 
-        logging.info('reading file {}'.format(input_file))
+        logging.info(f'reading file {input_file}')
 
         # get the document id from file name
-        doc_id = '.'.join(os.path.basename(input_file).split('.')[0:-1])
+        doc_id = '.'.join(os.path.basename(input_file).split('.')[:-1])
 
         # initialize the input file
         model.__init__()
@@ -243,21 +243,22 @@ def train_supervised_model(input_dir,
         masks[doc_id].append(len(training_classes))
 
     if not leave_one_out:
-        logging.info('writing model to {}'.format(model_file))
+        logging.info(f'writing model to {model_file}')
         model.train(training_instances=training_instances,
                     training_classes=training_classes,
                     model_file=model_file)
     else:
         logging.info('leave-one-out training procedure')
 
-        for doc_id in masks:
-            logging.info('writing model to {}'.format(doc_id))
-            ind = masks[doc_id]
+        for doc_id, ind in masks.items():
+            logging.info(f'writing model to {doc_id}')
             fold = training_instances[:ind[0]] + training_instances[ind[1]:]
             gold = training_classes[:ind[0]] + training_classes[ind[1]:]
-            model.train(training_instances=fold,
-                        training_classes=gold,
-                        model_file=model_file+"."+doc_id+".pickle")
+            model.train(
+                training_instances=fold,
+                training_classes=gold,
+                model_file=f"{model_file}.{doc_id}.pickle",
+            )
 
 
 def load_references(input_file,
@@ -285,7 +286,7 @@ def load_references(input_file,
             cross-validation), defaults to None.
     """
 
-    logging.info('loading reference keyphrases from {}'.format(input_file))
+    logging.info(f'loading reference keyphrases from {input_file}')
 
     references = defaultdict(list)
 
@@ -326,9 +327,9 @@ def load_references(input_file,
     # remove excluded file if needed
     if excluded_file is not None:
         if excluded_file not in references:
-            logging.warning("{} is not in references".format(excluded_file))
+            logging.warning(f"{excluded_file} is not in references")
         else:
-            logging.info("{} removed from references".format(excluded_file))
+            logging.info(f"{excluded_file} removed from references")
             del references[excluded_file]
 
     return references
@@ -383,7 +384,7 @@ def compute_lda_model(input_dir,
     # loop throught the documents
     for input_file in glob.iglob(input_dir + os.sep + '*.' + extension):
 
-        logging.info('reading file {}'.format(input_file))
+        logging.info(f'reading file {input_file}')
 
         # initialize load file object
         doc = LoadFile()
@@ -432,7 +433,7 @@ def compute_lda_model(input_dir,
                    lda_model.doc_topic_prior_)
 
     # Dump the df container
-    logging.info('writing LDA model to {}'.format(output_file))
+    logging.info(f'writing LDA model to {output_file}')
 
     # create directories from path if not exists
     if os.path.dirname(output_file):
@@ -478,11 +479,10 @@ def load_document_as_bos(input_file,
     vector = defaultdict(int)
 
     # loop through the sentences and add the stems to the vector
-    for i, sentence in enumerate(doc.sentences):
-        for j, stem in enumerate(sentence.stems):
-            if stem in stoplist:
-                continue
-            vector[stem] += 1
+    for sentence in doc.sentences:
+        for stem in sentence.stems:
+            if stem not in stoplist:
+                vector[stem] += 1
 
     return vector
 
@@ -552,7 +552,7 @@ def compute_pairwise_similarity_matrix(input_dir,
         # loop throught the documents in the collection
         for input_file in glob.iglob(
                 collection_dir + os.sep + '*.' + extension):
-            logging.info('Reading file from {}'.format(input_file))
+            logging.info(f'Reading file from {input_file}')
 
             # initialize document vector
             collection[input_file] = load_document_as_bos(
@@ -570,7 +570,7 @@ def compute_pairwise_similarity_matrix(input_dir,
     # loop throught the documents in the input directory
     for input_file in glob.iglob(input_dir + os.sep + '*.' + extension):
 
-        logging.info('Reading file from {}'.format(input_file))
+        logging.info(f'Reading file from {input_file}')
 
         # initialize document vector
         documents[input_file] = load_document_as_bos(
@@ -604,11 +604,15 @@ def compute_pairwise_similarity_matrix(input_dir,
                 inner += documents[doc_i][stem] * collection[doc_j][stem]
 
             # norms
-            norm_i = sum([math.pow(documents[doc_i][t], 2) for t in
-                          documents[doc_i]])
+            norm_i = sum(
+                math.pow(documents[doc_i][t], 2) for t in documents[doc_i]
+            )
+
             norm_i = math.sqrt(norm_i)
-            norm_j = sum([math.pow(collection[doc_j][t], 2) for t in
-                          collection[doc_j]])
+            norm_j = sum(
+                math.pow(collection[doc_j][t], 2) for t in collection[doc_j]
+            )
+
             norm_j = math.sqrt(norm_j)
 
             # compute cosine

@@ -56,10 +56,10 @@ class EmbedRank(LoadFile):
             self._embedding_path = embedding_path
 
         if not os.path.exists(self._embedding_path):
-            logging.error('Could not find {}'.format(self._embedding_path))
+            logging.error(f'Could not find {self._embedding_path}')
             logging.error('Please download "sent2vec_wiki_bigrams" model from '
                             'https://github.com/epfml/sent2vec#downloading-sent2vec-pre-trained-models.')
-            logging.error('And place it in {}.'.format(self._models))
+            logging.error(f'And place it in {self._models}.')
             logging.error('Or provide an embedding path.')
 
         if EmbedRank._embedding_path is None or EmbedRank._embedding_path != self._embedding_path:
@@ -160,9 +160,5 @@ class EmbedRank(LoadFile):
         cand_embed = self._embedding_model.embed_sentences(cand)
         rank = self.mmr_ranking(doc_embed, cand_embed, l)
         for candidate_id, r in enumerate(rank):
-            if len(rank) > 1:
-                # Inverting ranks so the first ranked candidate has the biggest score
-                score = (len(rank) - 1 - r) / (len(rank) - 1)
-            else:
-                score = r
+            score = (len(rank) - 1 - r) / (len(rank) - 1) if len(rank) > 1 else r
             self.weights[cand_name[candidate_id]] = score
